@@ -80,7 +80,7 @@
     <h3>Brand QR Generator</h3>
     <input type="text" id="url-input" placeholder="Paste URL here..." value="https://example.com" />
     <div id="qrcode"></div>
-    <button id="download-btn">Download PNG</button>
+    <button id="download-btn">Download SVG</button>
   </div>
 
   <script>
@@ -111,7 +111,7 @@
 
     // Working download button handler
     document.getElementById("download-btn").addEventListener("click", () => {
-      qrCode.download({ name: "brand-qr-code", extension: "png" });
+      qrCode.download({ name: "brand-qr-code", extension: "svg" });
     });
   </script>
 </body>
