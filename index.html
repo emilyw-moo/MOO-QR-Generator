@@ -86,27 +86,19 @@
   <script>
     const CANVAS_SIZE = 188;
 
-    // SVG Data URI containing the 30x45px drop centered inside a 63x63px transparent viewBox
-    const transparentDropletLogo = "data:image/svg+xml;utf8," + encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 63" width="63" height="63">
-        <g transform="translate(16.5, 9)">
-          <svg width="30" height="45" viewBox="0 0 29.88 44.95">
-            <path fill="#122E1D" d="M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84"/>
-          </svg>
-        </g>
-      </svg>
-    `);
+    // Blank mask image used ONLY to force the library to clear the 63px center grid
+    const blankCenterMask = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 63 63' width='63' height='63'></svg>";
 
     const qrCode = new QRCodeStyling({
       width: CANVAS_SIZE,
       height: CANVAS_SIZE,
       type: "svg",
       data: "https://example.com",
-      image: transparentDropletLogo,
+      image: blankCenterMask,
       qrOptions: { errorCorrectionLevel: "H" },
       imageOptions: {
-        hideBackgroundDots: true, // Native matrix clearing (100% transparent cutout)
-        imageSize: 0.335,         // Matches 63px cutout on a 188px canvas (63 / 188 ≈ 0.335)
+        hideBackgroundDots: true, // Clears the 63px center grid transparently
+        imageSize: 0.335,         // 63px / 188px
         margin: 0
       },
       dotsOptions: { color: "#122E1D", type: "rounded" },
@@ -118,14 +110,94 @@
     // Render the QR code base
     qrCode.append(document.getElementById("qrcode"));
 
+    // Inject native vector droplet for screen preview
+    function injectPreviewDroplet() {
+      setTimeout(() => {
+        const svgElement = document.querySelector("#qrcode svg");
+        if (!svgElement) return;
+
+        // Remove previous preview droplet
+        const existingLogo = svgElement.querySelector("#custom-droplet-logo");
+        if (existingLogo) existingLogo.remove();
+
+        // Target: Center 30x45px drop inside 188px canvas
+        const center = CANVAS_SIZE / 2; // 94px
+        const dropW = 30;
+        const dropH = 45;
+
+        const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        logoGroup.setAttribute("id", "custom-droplet-logo");
+
+        const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        dropSvg.setAttribute("x", center - (dropW / 2)); // 79px
+        dropSvg.setAttribute("y", center - (dropH / 2)); // 71.5px
+        dropSvg.setAttribute("width", dropW);
+        dropSvg.setAttribute("height", dropH);
+        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "#122E1D");
+        path.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
+
+        dropSvg.appendChild(path);
+        logoGroup.appendChild(dropSvg);
+        svgElement.appendChild(logoGroup);
+      }, 50);
+    }
+
+    injectPreviewDroplet();
+
     // Update QR code live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
+      injectPreviewDroplet();
     });
 
-    // Download SVG with pure vector paths preserved
+    // Custom Download Handler that converts embedded <image> to pure Illustrator-compatible <path>
     document.getElementById("download-btn").addEventListener("click", () => {
-      qrCode.download({ name: "brand-qr-code", extension: "svg" });
+      const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
+
+      // Remove the embedded <image> tag that Illustrator hides
+      const imageTag = svgElement.querySelector("image");
+      if (imageTag) imageTag.remove();
+
+      // Ensure the native vector droplet is present in the downloaded SVG
+      let logoGroup = svgElement.querySelector("#custom-droplet-logo");
+      if (!logoGroup) {
+        const center = CANVAS_SIZE / 2;
+        const dropW = 30;
+        const dropH = 45;
+
+        logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        logoGroup.setAttribute("id", "custom-droplet-logo");
+
+        const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        dropSvg.setAttribute("x", center - (dropW / 2));
+        dropSvg.setAttribute("y", center - (dropH / 2));
+        dropSvg.setAttribute("width", dropW);
+        dropSvg.setAttribute("height", dropH);
+        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "#122E1D");
+        path.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
+
+        dropSvg.appendChild(path);
+        logoGroup.appendChild(dropSvg);
+        svgElement.appendChild(logoGroup);
+      }
+
+      // Export pure vector SVG file
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = svgUrl;
+      downloadLink.download = "brand-qr-code.svg";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     });
   </script>
 </body>
