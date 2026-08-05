@@ -84,59 +84,81 @@
   </div>
 
   <script>
-    const CANVAS_SIZE = 188;
-
-    // Blank mask image used ONLY to force the library to clear the 63px center grid
-    const blankCenterMask = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 63 63' width='63' height='63'></svg>";
+    // LOCKED SPECIFICATIONS:
+    const CANVAS_SIZE = 188; // 188px x 188px overall canvas
+    const CLEAR_ZONE_SIZE = 63; // 63px x 63px fixed clear space
+    const DROP_WIDTH = 31;   // 31px fixed droplet width (16px side padding)
+    const DROP_HEIGHT = 43;  // 43px fixed droplet height (10px top/bottom padding)
 
     const qrCode = new QRCodeStyling({
       width: CANVAS_SIZE,
       height: CANVAS_SIZE,
       type: "svg",
       data: "https://example.com",
-      image: blankCenterMask,
       qrOptions: { errorCorrectionLevel: "H" },
-      imageOptions: {
-        hideBackgroundDots: true, // Clears the 63px center grid transparently
-        imageSize: 0.335,         // 63px / 188px
-        margin: 0
-      },
       dotsOptions: { color: "#122E1D", type: "rounded" },
       backgroundOptions: { color: "transparent" },
       cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" },
       cornersDotOptions: { color: "#122E1D", type: "dot" }
     });
 
-    // Render the QR code base
+    // Render base QR code
     qrCode.append(document.getElementById("qrcode"));
 
-    // Inject native vector droplet centered in the 63px clear cutout
-    function injectPreviewDroplet() {
+    // Enforces fixed 63px transparent cutout and fixed 31x43px droplet regardless of QR complexity
+    function applyFixedCenterCutout() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
         if (!svgElement) return;
 
-        // Remove previous preview droplet
+        const center = CANVAS_SIZE / 2; // 94px midpoint
+        const maskX = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
+        const maskY = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
+
+        // 1. Define or update strict pixel-level clipPath
+        let defs = svgElement.querySelector("defs");
+        if (!defs) {
+          defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+          svgElement.insertBefore(defs, svgElement.firstChild);
+        }
+
+        let clipPath = svgElement.querySelector("#fixed-center-cutout");
+        if (clipPath) clipPath.remove();
+
+        clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clipPath.setAttribute("id", "fixed-center-cutout");
+
+        // Composite clip shape covering the canvas minus the exact 63x63px center box
+        const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        clipRect.setAttribute("fill-rule", "evenodd");
+        clipRect.setAttribute("d", `M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z M ${maskX},${maskY} h ${CLEAR_ZONE_SIZE} v ${CLEAR_ZONE_SIZE} h -${CLEAR_ZONE_SIZE} Z`);
+
+        clipPath.appendChild(clipRect);
+        defs.appendChild(clipPath);
+
+        // Clip all QR module paths so no dots render inside the 63x63px pixel zone
+        const qrPaths = svgElement.querySelectorAll("path:not(#moo-drop-path)");
+        qrPaths.forEach(path => {
+          path.setAttribute("clip-path", "url(#fixed-center-cutout)");
+        });
+
+        // 2. Remove old droplet instance if present
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // Target: 10px padding top/bottom (Height = 63 - 20 = 43px)
-        // 16px padding left/right (Width = 63 - 32 = 31px)
-        const center = CANVAS_SIZE / 2; // 94px
-        const dropH = 43; // 63px - 10px top - 10px bottom
-        const dropW = 31; // 63px - 16px left - 16px right
-
+        // 3. Inject native 31x43px droplet locked to absolute center
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
         const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        dropSvg.setAttribute("x", center - (dropW / 2)); // 78.5px
-        dropSvg.setAttribute("y", center - (dropH / 2)); // 72.5px
-        dropSvg.setAttribute("width", dropW);
-        dropSvg.setAttribute("height", dropH);
+        dropSvg.setAttribute("x", center - (DROP_WIDTH / 2));  // 78.5px
+        dropSvg.setAttribute("y", center - (DROP_HEIGHT / 2)); // 72.5px
+        dropSvg.setAttribute("width", DROP_WIDTH);
+        dropSvg.setAttribute("height", DROP_HEIGHT);
         dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("id", "moo-drop-path");
         path.setAttribute("fill", "#122E1D");
         path.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
 
@@ -146,47 +168,22 @@
       }, 50);
     }
 
-    injectPreviewDroplet();
+    // Initial render
+    applyFixedCenterCutout();
 
     // Update QR code live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      injectPreviewDroplet();
+      applyFixedCenterCutout();
     });
 
-    // Download handler replacing <image> with pure Illustrator-compatible <path>
+    // Download handler exporting pure vector SVG to Illustrator
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
 
-      // Remove the embedded <image> tag that Illustrator hides
+      // Clean up internal image tags if any
       const imageTag = svgElement.querySelector("image");
       if (imageTag) imageTag.remove();
-
-      // Ensure the native vector droplet is present in the downloaded SVG
-      let logoGroup = svgElement.querySelector("#custom-droplet-logo");
-      if (!logoGroup) {
-        const center = CANVAS_SIZE / 2;
-        const dropH = 43;
-        const dropW = 31;
-
-        logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        logoGroup.setAttribute("id", "custom-droplet-logo");
-
-        const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        dropSvg.setAttribute("x", center - (dropW / 2));
-        dropSvg.setAttribute("y", center - (dropH / 2));
-        dropSvg.setAttribute("width", dropW);
-        dropSvg.setAttribute("height", dropH);
-        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
-
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("fill", "#122E1D");
-        path.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
-
-        dropSvg.appendChild(path);
-        logoGroup.appendChild(dropSvg);
-        svgElement.appendChild(logoGroup);
-      }
 
       // Export pure vector SVG file
       const svgData = new XMLSerializer().serializeToString(svgElement);
