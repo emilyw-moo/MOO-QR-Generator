@@ -84,41 +84,41 @@
   </div>
 
   <script>
-    // Pure Vector SVG String for the Droplet
-    const dropletSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.88 44.95'><path fill='%23122E1D' d='M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84'/></svg>";
+    // Exact MOO Leaf/Drop vector path with precise bounding viewBox (0 0 29.88 44.95)
+    const mooDropSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.88 44.95'><path fill='%23122E1D' d='M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84'/></svg>";
 
     const qrCode = new QRCodeStyling({
       width: 320,
       height: 320,
       type: "svg",
       data: "https://example.com",
-      image: dropletSVG,
+      image: mooDropSVG,
       qrOptions: { 
         errorCorrectionLevel: "H" 
       },
       imageOptions: { 
         hideBackgroundDots: true, 
-        imageSize: 0.22, // Controls central drop size relative to QR matrix
-        margin: 12      // Sets clean surrounding margin around the drop
+        imageSize: 0.20, // Adjust drop size
+        margin: 10       // Adjust clear area space around the drop
       },
       dotsOptions: { 
         color: "#122E1D", 
-        type: "rounded"  // Connected fluid modules matching your screenshot
+        type: "rounded" 
       },
       backgroundOptions: { 
         color: "transparent" 
       },
       cornersSquareOptions: { 
         color: "#122E1D", 
-        type: "extra-rounded" // Smooth outer eye frames
+        type: "extra-rounded" 
       },
       cornersDotOptions: { 
         color: "#122E1D", 
-        type: "dot" // Solid inner eye circles
+        type: "dot" 
       }
     });
 
-    // Render the QR code base
+    // Render the QR code
     qrCode.append(document.getElementById("qrcode"));
 
     // Update QR code live when typing
