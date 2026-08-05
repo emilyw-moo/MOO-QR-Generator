@@ -110,34 +110,30 @@
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // --- SCALED TO MATCH ILLUSTRATOR SVG ---
-        // Native aspect ratio: 29.88 / 44.95 (~0.665)
-        const dropH = 70; // Upscaled height to match Illustrator proportions
-        const dropW = dropH * (29.88 / 44.95); // ~46.5px width
+        // --- 63px SQUARE MASK ---
+        const maskSize = 63; // Exact 63px square
 
-        // Proportional padding (scaled up to match larger drop size)
-        const padSides = 16;  
-        const padVertical = 10; 
+        // Calculate drop size to maintain padding ratios inside 63px square
+        const padSides = 16;  // 16px padding on left/right
+        const dropW = maskSize - (padSides * 2); // 31px width
+        const dropH = dropW * (44.95 / 29.88);   // ~46.6px height (preserving aspect ratio)
 
-        const maskW = dropW + (padSides * 2);   // ~78.5px
-        const maskH = dropH + (padVertical * 2); // 90px
-
-        const center = CANVAS_SIZE / 2; // 160px
+        const center = CANVAS_SIZE / 2; // 160px center point
 
         // Group container
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
-        // 1. Centered Mask (White background clearing out QR modules)
+        // 1. Centered 63px x 63px Square Mask Box
         const maskRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        maskRect.setAttribute("x", center - (maskW / 2));
-        maskRect.setAttribute("y", center - (maskH / 2));
-        maskRect.setAttribute("width", maskW);
-        maskRect.setAttribute("height", maskH);
+        maskRect.setAttribute("x", center - (maskSize / 2));
+        maskRect.setAttribute("y", center - (maskSize / 2));
+        maskRect.setAttribute("width", maskSize);
+        maskRect.setAttribute("height", maskSize);
         maskRect.setAttribute("fill", "#ffffff");
-        maskRect.setAttribute("rx", "10");
+        maskRect.setAttribute("rx", "8"); // Smooth rounded corners for mask
 
-        // 2. Centered Vector Drop Container
+        // 2. Centered Droplet Container
         const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         dropSvg.setAttribute("x", center - (dropW / 2));
         dropSvg.setAttribute("y", center - (dropH / 2));
@@ -165,7 +161,7 @@
       injectVectorLogo();
     });
 
-    // Download SVG preserving pure vector paths
+    // Download SVG with pure vector paths preserved
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
       const svgData = new XMLSerializer().serializeToString(svgElement);
