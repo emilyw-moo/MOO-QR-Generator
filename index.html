@@ -98,50 +98,54 @@
       cornersDotOptions: { color: "#122E1D", type: "dot" }
     });
 
-    // Render the base QR code
+    // Render base QR code
     qrCode.append(document.getElementById("qrcode"));
 
-    function applyUnifiedVectorMask() {
+    function renderTransparentCenterSquare() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
         if (!svgElement) return;
 
-        // Target Dimensions
-        const maskSize = 63; // 63px center box
-        const dropW = 30;    // 30px drop width
-        const dropH = 45;    // 45px drop height
+        // Dimensions: Canvas 188px, Center Square 63px, Drop 30x45px
+        const maskSize = 63;
+        const dropW = 30;
+        const dropH = 45;
         const center = CANVAS_SIZE / 2; // 94px
 
         const maskX = center - (maskSize / 2); // 62.5px
         const maskY = center - (maskSize / 2); // 62.5px
 
-        // 1. Create a SVG clipPath for the 63px center cutout
-        let clipPath = svgElement.querySelector("#center-cutout-clip");
-        if (!clipPath) {
-          const defs = svgElement.querySelector("defs") || svgElement.insertBefore(document.createElementNS("http://www.w3.org/2000/svg", "defs"), svgElement.firstChild);
-          clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-          clipPath.setAttribute("id", "center-cutout-clip");
-          clipPath.setAttribute("clipPathUnits", "userSpaceOnUse");
-
-          // Path covering whole canvas minus the center 63px square (using evenodd fill-rule)
-          const outerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          outerPath.setAttribute("fill-rule", "evenodd");
-          outerPath.setAttribute("d", `M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z M ${maskX},${maskY} h ${maskSize} v ${maskSize} h -${maskSize} Z`);
-          
-          clipPath.appendChild(outerPath);
-          defs.appendChild(clipPath);
+        // 1. Create clipPath for QR code modules (cuts out exact 63px center box)
+        let defs = svgElement.querySelector("defs");
+        if (!defs) {
+          defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+          svgElement.insertBefore(defs, svgElement.firstChild);
         }
 
-        // Apply clip-path to all QR modules so no dots generate inside the 63px area
+        let clipPath = svgElement.querySelector("#center-transparent-cutout");
+        if (clipPath) clipPath.remove();
+
+        clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clipPath.setAttribute("id", "center-transparent-cutout");
+
+        const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        clipRect.setAttribute("fill-rule", "evenodd");
+        clipRect.setAttribute("d", `M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z M ${maskX},${maskY} h ${maskSize} v ${maskSize} h -${maskSize} Z`);
+
+        clipPath.appendChild(clipRect);
+        defs.appendChild(clipPath);
+
+        // Apply cutout clipPath to QR dots
         const qrPaths = svgElement.querySelectorAll("path:not(#moo-drop-path)");
         qrPaths.forEach(path => {
-          path.setAttribute("clip-path", "url(#center-cutout-clip)");
+          path.setAttribute("clip-path", "url(#center-transparent-cutout)");
         });
 
-        // 2. Inject the central 30x45px drop directly on top (transparent background)
+        // 2. Remove old drop instance if present
         let existingDrop = svgElement.querySelector("#custom-droplet-logo");
         if (existingDrop) existingDrop.remove();
 
+        // 3. Inject centered MOO Drop vector path inside the transparent 63px area
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
@@ -163,16 +167,16 @@
       }, 50);
     }
 
-    // Initial run
-    applyUnifiedVectorMask();
+    // Initial render
+    renderTransparentCenterSquare();
 
     // Update QR code live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      applyUnifiedVectorMask();
+      renderTransparentCenterSquare();
     });
 
-    // Download clean SVG with pure transparent vector paths preserved
+    // Download clean SVG with vector transparent structure preserved
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
       const svgData = new XMLSerializer().serializeToString(svgElement);
