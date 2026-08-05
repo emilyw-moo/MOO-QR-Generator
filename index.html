@@ -110,17 +110,19 @@
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // --- EXACT DIMENSIONS ---
-        const dropW = 30; // 30px width
-        const dropH = 35; // 35px height
+        // --- SCALED TO MATCH ILLUSTRATOR SVG ---
+        // Native aspect ratio: 29.88 / 44.95 (~0.665)
+        const dropH = 70; // Upscaled height to match Illustrator proportions
+        const dropW = dropH * (29.88 / 44.95); // ~46.5px width
 
-        const padSides = 16;  // 16px side padding
-        const padVertical = 10; // 10px top/bottom padding
+        // Proportional padding (scaled up to match larger drop size)
+        const padSides = 16;  
+        const padVertical = 10; 
 
-        const maskW = dropW + (padSides * 2);   // 62px total mask width
-        const maskH = dropH + (padVertical * 2); // 55px total mask height
+        const maskW = dropW + (padSides * 2);   // ~78.5px
+        const maskH = dropH + (padVertical * 2); // 90px
 
-        const center = CANVAS_SIZE / 2; // 160px center point
+        const center = CANVAS_SIZE / 2; // 160px
 
         // Group container
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -133,15 +135,15 @@
         maskRect.setAttribute("width", maskW);
         maskRect.setAttribute("height", maskH);
         maskRect.setAttribute("fill", "#ffffff");
-        maskRect.setAttribute("rx", "8");
+        maskRect.setAttribute("rx", "10");
 
-        // 2. Centered SVG Container for 30x35px Droplet
+        // 2. Centered Vector Drop Container
         const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         dropSvg.setAttribute("x", center - (dropW / 2));
         dropSvg.setAttribute("y", center - (dropH / 2));
         dropSvg.setAttribute("width", dropW);
         dropSvg.setAttribute("height", dropH);
-        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95"); // Fits exact native path proportions
+        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "#122E1D");
@@ -163,7 +165,7 @@
       injectVectorLogo();
     });
 
-    // Download SVG with pure vector paths preserved
+    // Download SVG preserving pure vector paths
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
       const svgData = new XMLSerializer().serializeToString(svgElement);
