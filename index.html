@@ -84,11 +84,11 @@
   </div>
 
   <script>
-    // LOCKED SPECIFICATIONS:
-    const CANVAS_SIZE = 188; // 188px x 188px overall canvas
-    const CLEAR_ZONE_SIZE = 63; // 63px x 63px fixed clear space
-    const DROP_WIDTH = 31;   // 31px fixed droplet width (16px side padding)
-    const DROP_HEIGHT = 43;  // 43px fixed droplet height (10px top/bottom padding)
+    // FIXED ABSOLUTE DIMENSIONS
+    const CANVAS_SIZE = 188;     // 188px Canvas
+    const CLEAR_ZONE_SIZE = 63; // 63px Transparent Center Box
+    const DROP_WIDTH = 31;      // 31px Droplet Width (16px left/right padding)
+    const DROP_HEIGHT = 43;     // 43px Droplet Height (10px top/bottom padding)
 
     const qrCode = new QRCodeStyling({
       width: CANVAS_SIZE,
@@ -105,48 +105,55 @@
     // Render base QR code
     qrCode.append(document.getElementById("qrcode"));
 
-    // Enforces fixed 63px transparent cutout and fixed 31x43px droplet regardless of QR complexity
-    function applyFixedCenterCutout() {
+    function applyTransparentCutoutAndLogo() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
         if (!svgElement) return;
 
-        const center = CANVAS_SIZE / 2; // 94px midpoint
+        const center = CANVAS_SIZE / 2; // 94px
         const maskX = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
         const maskY = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
 
-        // 1. Define or update strict pixel-level clipPath
+        // 1. Ensure <defs> exists
         let defs = svgElement.querySelector("defs");
         if (!defs) {
           defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
           svgElement.insertBefore(defs, svgElement.firstChild);
         }
 
-        let clipPath = svgElement.querySelector("#fixed-center-cutout");
-        if (clipPath) clipPath.remove();
+        // 2. Re-create the SVG Mask (White = show QR dots, Black = 100% transparent cutout)
+        let mask = svgElement.querySelector("#center-mask");
+        if (mask) mask.remove();
 
-        clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-        clipPath.setAttribute("id", "fixed-center-cutout");
+        mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
+        mask.setAttribute("id", "center-mask");
 
-        // Composite clip shape covering the canvas minus the exact 63x63px center box
-        const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        clipRect.setAttribute("fill-rule", "evenodd");
-        clipRect.setAttribute("d", `M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z M ${maskX},${maskY} h ${CLEAR_ZONE_SIZE} v ${CLEAR_ZONE_SIZE} h -${CLEAR_ZONE_SIZE} Z`);
+        // White base to render all QR dots
+        const whiteBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        whiteBg.setAttribute("width", CANVAS_SIZE);
+        whiteBg.setAttribute("height", CANVAS_SIZE);
+        whiteBg.setAttribute("fill", "#ffffff");
 
-        clipPath.appendChild(clipRect);
-        defs.appendChild(clipPath);
+        // Black 63x63px square to cut a true hole in the center
+        const blackSquare = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        blackSquare.setAttribute("x", maskX);
+        blackSquare.setAttribute("y", maskY);
+        blackSquare.setAttribute("width", CLEAR_ZONE_SIZE);
+        blackSquare.setAttribute("height", CLEAR_ZONE_SIZE);
+        blackSquare.setAttribute("fill", "#000000");
 
-        // Clip all QR module paths so no dots render inside the 63x63px pixel zone
-        const qrPaths = svgElement.querySelectorAll("path:not(#moo-drop-path)");
-        qrPaths.forEach(path => {
-          path.setAttribute("clip-path", "url(#fixed-center-cutout)");
-        });
+        mask.appendChild(whiteBg);
+        mask.appendChild(blackSquare);
+        defs.appendChild(mask);
 
-        // 2. Remove old droplet instance if present
-        const existingLogo = svgElement.querySelector("#custom-droplet-logo");
+        // Apply mask to the SVG root container / paths
+        const targetGroup = svgElement.querySelector("g") || svgElement;
+        targetGroup.setAttribute("mask", "url(#center-mask)");
+
+        // 3. Inject native 31x43px vector droplet outside the mask
+        let existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // 3. Inject native 31x43px droplet locked to absolute center
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
@@ -164,28 +171,25 @@
 
         dropSvg.appendChild(path);
         logoGroup.appendChild(dropSvg);
+        
+        // Append droplet after masked elements so it renders unmasked
         svgElement.appendChild(logoGroup);
       }, 50);
     }
 
     // Initial render
-    applyFixedCenterCutout();
+    applyTransparentCutoutAndLogo();
 
     // Update QR code live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      applyFixedCenterCutout();
+      applyTransparentCutoutAndLogo();
     });
 
-    // Download handler exporting pure vector SVG to Illustrator
+    // Download SVG with pure vector paths preserved
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
 
-      // Clean up internal image tags if any
-      const imageTag = svgElement.querySelector("image");
-      if (imageTag) imageTag.remove();
-
-      // Export pure vector SVG file
       const svgData = new XMLSerializer().serializeToString(svgElement);
       const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
       const svgUrl = URL.createObjectURL(svgBlob);
