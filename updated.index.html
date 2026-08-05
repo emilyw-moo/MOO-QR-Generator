@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Brand QR Generator</title>
+  <style>
+    body {
+      width: 340px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h3 {
+      margin: 0 0 12px 0;
+      color: #122E1D; /* Updated Brand HEX */
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    input:focus {
+      border-color: #122E1D; /* Updated Brand HEX */
+    }
+    #qrcode {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      background: #122E1D; /* Updated Brand HEX */
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+  <script src="qr-code-styling.js"></script>
+</head>
+<body>
+  <h3>Brand QR Generator</h3>
+  <input type="text" id="url-input" placeholder="Paste URL here..." />
+  <div id="qrcode"></div>
+  <button id="download-btn">Download PNG</button>
+
+  <script>
+    // Droplet SVG with color #122E1D to match brand HEX and provided logo shape
+    const dropletSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23122E1D'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>";
+
+    const qrCode = new QRCodeStyling({
+      width: 280,
+      height: 280,
+      type: "svg",
+      data: "https://example.com",
+      image: dropletSVG, // Center logo integrated here
+      qrOptions: { errorCorrectionLevel: "H" },
+      imageOptions: { hideBackgroundDots: true, imageSize: 0.25, margin: 4 },
+      dotsOptions: { color: "#122E1D", type: "rounded" }, // Fluid dots matched to brand HEX
+      backgroundOptions: { color: "#ffffff" },
+      cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" }, // Position markers matched to brand HEX
+      cornersDotOptions: { color: "#122E1D", type: "dot" } // Position inner dots matched to brand HEX
+    });
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      qrCode.append(document.getElementById("qrcode"));
+
+      // Auto-fill active tab URL if available
+      if (chrome.tabs) {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab && tab.url) {
+          document.getElementById("url-input").value = tab.url;
+          qrCode.update({ data: tab.url });
+        }
+      }
+
+      document.getElementById("url-input").addEventListener("input", (e) => {
+        qrCode.update({ data: e.target.value || "https://example.com" });
+      });
+
+      document.getElementById("download-btn").addEventListener("click", () => {
+        qrCode.download({ name: "brand-qr-code", extension: "png" });
+      });
+    });
+  </script>
+</body>
+</html>
