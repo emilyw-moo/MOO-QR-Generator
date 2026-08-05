@@ -84,111 +84,51 @@
   </div>
 
   <script>
-    const CANVAS_SIZE = 188;
+    // Droplet SVG with exact viewBox (0 0 29.88 44.95)
+    const mooDropSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.88 44.95'><path fill='%23122E1D' d='M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84'/></svg>";
 
     const qrCode = new QRCodeStyling({
-      width: CANVAS_SIZE,
-      height: CANVAS_SIZE,
+      width: 188,
+      height: 188,
       type: "svg",
       data: "https://example.com",
-      qrOptions: { errorCorrectionLevel: "H" },
-      dotsOptions: { color: "#122E1D", type: "rounded" },
-      backgroundOptions: { color: "transparent" },
-      cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" },
-      cornersDotOptions: { color: "#122E1D", type: "dot" }
+      image: mooDropSVG,
+      qrOptions: { 
+        errorCorrectionLevel: "H" // Ensures high redundancy so the center clear zone scans reliably
+      },
+      imageOptions: { 
+        hideBackgroundDots: true, // Clears all QR dots behind the logo completely transparent
+        imageSize: 0.24,          // Scales drop to 30x45px on 188px canvas
+        margin: 9                 // Sets clear space around drop to equal a 63px center box
+      },
+      dotsOptions: { 
+        color: "#122E1D", 
+        type: "rounded" 
+      },
+      backgroundOptions: { 
+        color: "transparent" // Overall canvas transparency
+      },
+      cornersSquareOptions: { 
+        color: "#122E1D", 
+        type: "extra-rounded" 
+      },
+      cornersDotOptions: { 
+        color: "#122E1D", 
+        type: "dot" 
+      }
     });
 
-    // Render base QR code
+    // Render QR Code
     qrCode.append(document.getElementById("qrcode"));
 
-    function renderTransparentCenterSquare() {
-      setTimeout(() => {
-        const svgElement = document.querySelector("#qrcode svg");
-        if (!svgElement) return;
-
-        // Dimensions: Canvas 188px, Center Square 63px, Drop 30x45px
-        const maskSize = 63;
-        const dropW = 30;
-        const dropH = 45;
-        const center = CANVAS_SIZE / 2; // 94px
-
-        const maskX = center - (maskSize / 2); // 62.5px
-        const maskY = center - (maskSize / 2); // 62.5px
-
-        // 1. Create clipPath for QR code modules (cuts out exact 63px center box)
-        let defs = svgElement.querySelector("defs");
-        if (!defs) {
-          defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-          svgElement.insertBefore(defs, svgElement.firstChild);
-        }
-
-        let clipPath = svgElement.querySelector("#center-transparent-cutout");
-        if (clipPath) clipPath.remove();
-
-        clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-        clipPath.setAttribute("id", "center-transparent-cutout");
-
-        const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        clipRect.setAttribute("fill-rule", "evenodd");
-        clipRect.setAttribute("d", `M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z M ${maskX},${maskY} h ${maskSize} v ${maskSize} h -${maskSize} Z`);
-
-        clipPath.appendChild(clipRect);
-        defs.appendChild(clipPath);
-
-        // Apply cutout clipPath to QR dots
-        const qrPaths = svgElement.querySelectorAll("path:not(#moo-drop-path)");
-        qrPaths.forEach(path => {
-          path.setAttribute("clip-path", "url(#center-transparent-cutout)");
-        });
-
-        // 2. Remove old drop instance if present
-        let existingDrop = svgElement.querySelector("#custom-droplet-logo");
-        if (existingDrop) existingDrop.remove();
-
-        // 3. Inject centered MOO Drop vector path inside the transparent 63px area
-        const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        logoGroup.setAttribute("id", "custom-droplet-logo");
-
-        const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        dropSvg.setAttribute("x", center - (dropW / 2));
-        dropSvg.setAttribute("y", center - (dropH / 2));
-        dropSvg.setAttribute("width", dropW);
-        dropSvg.setAttribute("height", dropH);
-        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
-
-        const dropPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        dropPath.setAttribute("id", "moo-drop-path");
-        dropPath.setAttribute("fill", "#122E1D");
-        dropPath.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
-
-        dropSvg.appendChild(dropPath);
-        logoGroup.appendChild(dropSvg);
-        svgElement.appendChild(logoGroup);
-      }, 50);
-    }
-
-    // Initial render
-    renderTransparentCenterSquare();
-
-    // Update QR code live when typing
+    // Update live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      renderTransparentCenterSquare();
     });
 
-    // Download clean SVG with vector transparent structure preserved
+    // Download native SVG vector
     document.getElementById("download-btn").addEventListener("click", () => {
-      const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const svgUrl = URL.createObjectURL(svgBlob);
-      
-      const downloadLink = document.createElement("a");
-      downloadLink.href = svgUrl;
-      downloadLink.download = "brand-qr-code.svg";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+      qrCode.download({ name: "brand-qr-code", extension: "svg" });
     });
   </script>
 </body>
