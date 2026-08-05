@@ -84,95 +84,51 @@
   </div>
 
   <script>
+    // Pure Vector SVG String for the Droplet
+    const dropletSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.88 44.95'><path fill='%23122E1D' d='M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84'/></svg>";
+
     const qrCode = new QRCodeStyling({
-      width: 280,
-      height: 280,
+      width: 320,
+      height: 320,
       type: "svg",
       data: "https://example.com",
-      qrOptions: { errorCorrectionLevel: "H" },
-      dotsOptions: { color: "#122E1D", type: "rounded" },
-      backgroundOptions: { color: "transparent" },
-      cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" },
-      cornersDotOptions: { color: "#122E1D", type: "dot" }
+      image: dropletSVG,
+      qrOptions: { 
+        errorCorrectionLevel: "H" 
+      },
+      imageOptions: { 
+        hideBackgroundDots: true, 
+        imageSize: 0.22, // Controls central drop size relative to QR matrix
+        margin: 12      // Sets clean surrounding margin around the drop
+      },
+      dotsOptions: { 
+        color: "#122E1D", 
+        type: "rounded"  // Connected fluid modules matching your screenshot
+      },
+      backgroundOptions: { 
+        color: "transparent" 
+      },
+      cornersSquareOptions: { 
+        color: "#122E1D", 
+        type: "extra-rounded" // Smooth outer eye frames
+      },
+      cornersDotOptions: { 
+        color: "#122E1D", 
+        type: "dot" // Solid inner eye circles
+      }
     });
 
     // Render the QR code base
     qrCode.append(document.getElementById("qrcode"));
 
-    function injectVectorLogo() {
-      setTimeout(() => {
-        const svgElement = document.querySelector("#qrcode svg");
-        if (!svgElement) return;
-
-        // Remove any previously injected logo group
-        const existingLogo = svgElement.querySelector("#custom-droplet-logo");
-        if (existingLogo) existingLogo.remove();
-
-        // Target Dimensions:
-        // Droplet at scale(1.4) => Width: 41.83px, Height: 62.93px
-        // Plus 16px sides => Mask Width = 73.83px
-        // Plus 9px top/bottom => Mask Height = 80.93px
-        const dropW = 41.83;
-        const dropH = 62.93;
-        const maskW = dropW + 32; // 73.83px
-        const maskH = dropH + 18; // 80.93px
-
-        const canvasCenter = 140; // 280 / 2
-
-        // Group Container
-        const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        logoGroup.setAttribute("id", "custom-droplet-logo");
-
-        // 1. Centered Mask Box
-        const maskRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        maskRect.setAttribute("x", canvasCenter - (maskW / 2));
-        maskRect.setAttribute("y", canvasCenter - (maskH / 2));
-        maskRect.setAttribute("width", maskW);
-        maskRect.setAttribute("height", maskH);
-        maskRect.setAttribute("fill", "#ffffff");
-        maskRect.setAttribute("rx", "10");
-
-        // 2. Centered Inner ViewBox for Native Drop Alignment
-        const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        dropSvg.setAttribute("x", canvasCenter - (dropW / 2));
-        dropSvg.setAttribute("y", canvasCenter - (dropH / 2));
-        dropSvg.setAttribute("width", dropW);
-        dropSvg.setAttribute("height", dropH);
-        dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
-
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("fill", "#122E1D");
-        path.setAttribute("d", "M14.94,44.95h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02,0.1-2.04,0.31-3.03,0.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69,0.32-0.47,0.68-0.99,1.36-0.99s1.04,0.52,1.36,0.99c0.03,0.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26,0.2,0.97,0.3,1.99,0.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
-
-        dropSvg.appendChild(path);
-        logoGroup.appendChild(maskRect);
-        logoGroup.appendChild(dropSvg);
-        svgElement.appendChild(logoGroup);
-      }, 50);
-    }
-
-    // Initial injection
-    injectVectorLogo();
-
     // Update QR code live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      injectVectorLogo();
     });
 
-    // Custom SVG Download logic preserving pure vector paths for Illustrator
+    // SVG Download Logic
     document.getElementById("download-btn").addEventListener("click", () => {
-      const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const svgUrl = URL.createObjectURL(svgBlob);
-      
-      const downloadLink = document.createElement("a");
-      downloadLink.href = svgUrl;
-      downloadLink.download = "brand-qr-code.svg";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+      qrCode.download({ name: "brand-qr-code", extension: "svg" });
     });
   </script>
 </body>
