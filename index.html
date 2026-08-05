@@ -110,7 +110,7 @@
     // Render the QR code base
     qrCode.append(document.getElementById("qrcode"));
 
-    // Inject native vector droplet for screen preview
+    // Inject native vector droplet centered in the 63px clear cutout
     function injectPreviewDroplet() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
@@ -120,17 +120,18 @@
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // Target: Center 30x45px drop inside 188px canvas
+        // Target: 10px padding top/bottom (Height = 63 - 20 = 43px)
+        // 16px padding left/right (Width = 63 - 32 = 31px)
         const center = CANVAS_SIZE / 2; // 94px
-        const dropW = 30;
-        const dropH = 45;
+        const dropH = 43; // 63px - 10px top - 10px bottom
+        const dropW = 31; // 63px - 16px left - 16px right
 
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
         const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        dropSvg.setAttribute("x", center - (dropW / 2)); // 79px
-        dropSvg.setAttribute("y", center - (dropH / 2)); // 71.5px
+        dropSvg.setAttribute("x", center - (dropW / 2)); // 78.5px
+        dropSvg.setAttribute("y", center - (dropH / 2)); // 72.5px
         dropSvg.setAttribute("width", dropW);
         dropSvg.setAttribute("height", dropH);
         dropSvg.setAttribute("viewBox", "0 0 29.88 44.95");
@@ -153,7 +154,7 @@
       injectPreviewDroplet();
     });
 
-    // Custom Download Handler that converts embedded <image> to pure Illustrator-compatible <path>
+    // Download handler replacing <image> with pure Illustrator-compatible <path>
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
 
@@ -165,8 +166,8 @@
       let logoGroup = svgElement.querySelector("#custom-droplet-logo");
       if (!logoGroup) {
         const center = CANVAS_SIZE / 2;
-        const dropW = 30;
-        const dropH = 45;
+        const dropH = 43;
+        const dropW = 31;
 
         logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
