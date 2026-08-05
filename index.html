@@ -99,7 +99,7 @@
     // Render the QR code base
     qrCode.append(document.getElementById("qrcode"));
 
-    // Function to clear center modules & inject pure vector path with custom asymmetric padding
+    // Function to clear center modules & inject pure vector path with custom padding
     function injectVectorLogo() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
@@ -109,13 +109,13 @@
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // Droplet bounding box dimensions at scale(1.4): Width ~42px, Height ~63px
-        // Adding 16px padding to left/right and 9px padding to top/bottom:
-        const maskWidth = 74;  // 42px + (16px * 2)
-        const maskHeight = 81; // 63px + (9px * 2)
+        // Droplet native dimensions at scale(1.4): Width = ~42px, Height = ~63px
+        // Adding 16px padding left/right (42 + 32 = 74) and 9px top/bottom (63 + 18 = 81)
+        const maskWidth = 74;  
+        const maskHeight = 81; 
 
-        const maskX = (280 - maskWidth) / 2;
-        const maskY = (280 - maskHeight) / 2;
+        const maskX = (280 - maskWidth) / 2;  // 103px
+        const maskY = (280 - maskHeight) / 2; // 99.5px
 
         // Mask out center QR modules with the customized rectangular clear space
         const maskRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -135,8 +135,8 @@
         path.setAttribute("fill", "#122E1D");
         path.setAttribute("d", "M31.34,116.45h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02.1-2.04.31-3.03.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69.32-.47.68-.99,1.36-.99s1.04.52,1.36.99c.03.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26.2.97.3,1.99.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84");
         
-        // Center the scaled droplet within the mask
-        path.setAttribute("transform", "translate(96, 76) scale(1.4)");
+        // Exact mathematical alignment to center the droplet at (140, 140)
+        path.setAttribute("transform", "translate(96.12, 10.5) scale(1.4)");
 
         logoGroup.appendChild(maskRect);
         logoGroup.appendChild(path);
