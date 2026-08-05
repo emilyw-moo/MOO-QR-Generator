@@ -84,19 +84,19 @@
   </div>
 
   <script>
-    // Droplet SVG with brand color #122E1D
-    const dropletSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23122E1D'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>";
+    // Custom Droplet Path extracted directly from your Illustrator SVG
+    const dropletSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='16.4 71.5 30 45'><path fill='%23122E1D' d='M31.34,116.45h0c-4.67,0-8.98-2.13-11.84-5.84-2.03-2.63-3.1-5.78-3.1-9.1,0-1.02.1-2.04.31-3.03.53-3.3,3-8.77,7.32-16.24,3.21-5.54,5.93-9.65,5.96-9.69.32-.47.68-.99,1.36-.99s1.04.52,1.36.99c.03.04,2.77,4.2,5.96,9.7,4.33,7.47,6.79,12.94,7.32,16.26.2.97.3,1.99.3,3.01,0,3.32-1.07,6.46-3.1,9.1-2.86,3.71-7.18,5.84-11.84,5.84'/></svg>";
 
     const qrCode = new QRCodeStyling({
       width: 280,
       height: 280,
-      type: "canvas",
+      type: "svg",
       data: "https://example.com",
       image: dropletSVG,
       qrOptions: { errorCorrectionLevel: "H" },
       imageOptions: { hideBackgroundDots: true, imageSize: 0.25, margin: 4 },
       dotsOptions: { color: "#122E1D", type: "rounded" },
-      backgroundOptions: { color: "#ffffff" },
+      backgroundOptions: { color: "transparent" },
       cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" },
       cornersDotOptions: { color: "#122E1D", type: "dot" }
     });
@@ -109,11 +109,10 @@
       qrCode.update({ data: e.target.value || "https://example.com" });
     });
 
-    // Working download button handler
+    // Download SVG File
     document.getElementById("download-btn").addEventListener("click", () => {
       qrCode.download({ name: "brand-qr-code", extension: "svg" });
     });
   </script>
 </body>
 </html>
-
