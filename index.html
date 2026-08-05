@@ -84,7 +84,8 @@
   </div>
 
   <script>
-    const CANVAS_SIZE = 320;
+    // 188px Overall Canvas Size
+    const CANVAS_SIZE = 188;
 
     const qrCode = new QRCodeStyling({
       width: CANVAS_SIZE,
@@ -110,30 +111,27 @@
         const existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
-        // --- 63px SQUARE MASK ---
-        const maskSize = 63; // Exact 63px square
+        // --- DIMENSIONS & PADDING ---
+        const maskSize = 63; // 63px square clear area
+        const dropW = 30;    // 30px droplet width
+        const dropH = 45;    // 45px droplet height
 
-        // Calculate drop size to maintain padding ratios inside 63px square
-        const padSides = 16;  // 16px padding on left/right
-        const dropW = maskSize - (padSides * 2); // 31px width
-        const dropH = dropW * (44.95 / 29.88);   // ~46.6px height (preserving aspect ratio)
-
-        const center = CANVAS_SIZE / 2; // 160px center point
+        const center = CANVAS_SIZE / 2; // 94px center point (188 / 2)
 
         // Group container
         const logoGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         logoGroup.setAttribute("id", "custom-droplet-logo");
 
-        // 1. Centered 63px x 63px Square Mask Box
+        // 1. Transparent Mask Box (clears out QR dots behind the droplet)
         const maskRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         maskRect.setAttribute("x", center - (maskSize / 2));
         maskRect.setAttribute("y", center - (maskSize / 2));
         maskRect.setAttribute("width", maskSize);
         maskRect.setAttribute("height", maskSize);
-        maskRect.setAttribute("fill", "#ffffff");
-        maskRect.setAttribute("rx", "8"); // Smooth rounded corners for mask
+        maskRect.setAttribute("fill", "#ffffff"); // Fills center white to hide overlapping QR dots
+        maskRect.setAttribute("rx", "6");
 
-        // 2. Centered Droplet Container
+        // 2. Centered Droplet Vector (30px x 45px)
         const dropSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         dropSvg.setAttribute("x", center - (dropW / 2));
         dropSvg.setAttribute("y", center - (dropH / 2));
