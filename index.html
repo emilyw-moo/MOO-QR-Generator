@@ -84,19 +84,28 @@
   </div>
 
   <script>
-    // FIXED PHYSICAL PIXEL DIMENSIONS (Never scale with QR grid density)
-    const CANVAS_SIZE = 188;     // 188px x 188px total canvas
-    const CLEAR_ZONE_SIZE = 63; // 63px x 63px center box
-    const CORNER_RADIUS = 6;    // 6px rounded corners
-    const DROP_WIDTH = 31;      // 31px drop width (16px side padding)
-    const DROP_HEIGHT = 43;     // 43px drop height (10px top/bottom padding)
+    // STRICT FIXED PHYSICAL DIMENSIONS
+    const CANVAS_SIZE = 188;     // Total canvas width/height
+    const CLEAR_ZONE_SIZE = 63; // Center transparent box
+    const CORNER_RADIUS = 6;    // Inner box corner radius
+    const DROP_WIDTH = 31;      // Droplet width (16px side padding)
+    const DROP_HEIGHT = 43;     // Droplet height (10px top/bottom padding)
+
+    // Inline SVG Data-URI used to tell the native QR matrix generator to leave a clear zone
+    const centerClearMask = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${CLEAR_ZONE_SIZE} ${CLEAR_ZONE_SIZE}' width='${CLEAR_ZONE_SIZE}' height='${CLEAR_ZONE_SIZE}'><rect width='${CLEAR_ZONE_SIZE}' height='${CLEAR_ZONE_SIZE}' fill='none'/></svg>`;
 
     const qrCode = new QRCodeStyling({
       width: CANVAS_SIZE,
       height: CANVAS_SIZE,
       type: "svg",
       data: "https://example.com",
+      image: centerClearMask,
       qrOptions: { errorCorrectionLevel: "H" },
+      imageOptions: {
+        hideBackgroundDots: true, // Forces matrix to build around center
+        imageSize: CLEAR_ZONE_SIZE / CANVAS_SIZE, // Exact 63px/188px ratio
+        margin: 0
+      },
       dotsOptions: { color: "#122E1D", type: "rounded" },
       backgroundOptions: { color: "transparent" },
       cornersSquareOptions: { color: "#122E1D", type: "extra-rounded" },
@@ -106,8 +115,7 @@
     // Render base QR code
     qrCode.append(document.getElementById("qrcode"));
 
-    function enforceFixedDimensions() {
-      // Small timeout ensures the library finishes DOM updates before we punch the cutout
+    function renderBuiltAroundMatrix() {
       setTimeout(() => {
         const svgElement = document.querySelector("#qrcode svg");
         if (!svgElement) return;
@@ -116,52 +124,49 @@
         const x = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
         const y = center - (CLEAR_ZONE_SIZE / 2); // 62.5px
 
-        // 1. Create permanent <defs> container
+        // 1. Ensure <defs> container
         let defs = svgElement.querySelector("defs");
         if (!defs) {
           defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
           svgElement.insertBefore(defs, svgElement.firstChild);
         }
 
-        // 2. Re-inject permanent Mask element
-        let mask = svgElement.querySelector("#fixed-rounded-mask");
-        if (mask) mask.remove();
+        // 2. Clean up old image element inserted by library (leaving area built-around)
+        const libraryImage = svgElement.querySelector("image");
+        if (libraryImage) libraryImage.remove();
 
-        mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
-        mask.setAttribute("id", "fixed-rounded-mask");
-        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        // 3. Define clipPath for exact 63px rounded cutout
+        let clipPath = svgElement.querySelector("#grid-built-clip");
+        if (clipPath) clipPath.remove();
 
-        // White background preserves all surrounding QR modules
-        const whiteCanvas = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        whiteCanvas.setAttribute("x", "0");
-        whiteCanvas.setAttribute("y", "0");
-        whiteCanvas.setAttribute("width", CANVAS_SIZE);
-        whiteCanvas.setAttribute("height", CANVAS_SIZE);
-        whiteCanvas.setAttribute("fill", "#ffffff");
+        clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clipPath.setAttribute("id", "grid-built-clip");
 
-        // Black rounded rectangle cuts an absolute 63x63px transparent window in the center
-        const blackHole = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        blackHole.setAttribute("x", x);
-        blackHole.setAttribute("y", y);
-        blackHole.setAttribute("width", CLEAR_ZONE_SIZE);
-        blackHole.setAttribute("height", CLEAR_ZONE_SIZE);
-        blackHole.setAttribute("rx", CORNER_RADIUS);
-        blackHole.setAttribute("ry", CORNER_RADIUS);
-        blackHole.setAttribute("fill", "#000000");
+        const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        clipRect.setAttribute("fill-rule", "evenodd");
+        clipRect.setAttribute("d", `
+          M 0,0 H ${CANVAS_SIZE} V ${CANVAS_SIZE} H 0 Z 
+          M ${x + CORNER_RADIUS},${y} 
+          h ${CLEAR_ZONE_SIZE - 2 * CORNER_RADIUS} 
+          a ${CORNER_RADIUS},${CORNER_RADIUS} 0 0 1 ${CORNER_RADIUS},${CORNER_RADIUS} 
+          v ${CLEAR_ZONE_SIZE - 2 * CORNER_RADIUS} 
+          a ${CORNER_RADIUS},${CORNER_RADIUS} 0 0 1 -${CORNER_RADIUS},${CORNER_RADIUS} 
+          h -${CLEAR_ZONE_SIZE - 2 * CORNER_RADIUS} 
+          a ${CORNER_RADIUS},${CORNER_RADIUS} 0 0 1 -${CORNER_RADIUS},-${CORNER_RADIUS} 
+          v -${CLEAR_ZONE_SIZE - 2 * CORNER_RADIUS} 
+          a ${CORNER_RADIUS},${CORNER_RADIUS} 0 0 1 ${CORNER_RADIUS},-${CORNER_RADIUS} Z
+        `);
 
-        mask.appendChild(whiteCanvas);
-        mask.appendChild(blackHole);
-        defs.appendChild(mask);
+        clipPath.appendChild(clipRect);
+        defs.appendChild(clipPath);
 
-        // Apply mask to ALL QR paths generated by the library
-        const allPaths = svgElement.querySelectorAll("path, rect");
-        allPaths.forEach(el => {
-          if (el.id !== "moo-drop-path") {
-            el.setAttribute("mask", "url(#fixed-rounded-mask)");
-          }
+        // Apply clip path strictly to QR modules
+        const qrPaths = svgElement.querySelectorAll("path:not(#moo-drop-path)");
+        qrPaths.forEach(path => {
+          path.setAttribute("clip-path", "url(#grid-built-clip)");
         });
 
-        // 3. Inject native vector droplet locked to center of the transparent cutout
+        // 4. Inject native vector droplet locked at center (31x43px)
         let existingLogo = svgElement.querySelector("#custom-droplet-logo");
         if (existingLogo) existingLogo.remove();
 
@@ -186,18 +191,22 @@
       }, 50);
     }
 
-    // Initial run
-    enforceFixedDimensions();
+    // Initial render
+    renderBuiltAroundMatrix();
 
-    // Update live when typing (re-applies absolute pixel mask on every text change)
+    // Update live when typing
     document.getElementById("url-input").addEventListener("input", (e) => {
       qrCode.update({ data: e.target.value || "https://example.com" });
-      enforceFixedDimensions();
+      renderBuiltAroundMatrix();
     });
 
     // Download handler exporting pure vector SVG to Illustrator
     document.getElementById("download-btn").addEventListener("click", () => {
       const svgElement = document.querySelector("#qrcode svg").cloneNode(true);
+
+      // Clean out image tags
+      const imageTag = svgElement.querySelector("image");
+      if (imageTag) imageTag.remove();
 
       const svgData = new XMLSerializer().serializeToString(svgElement);
       const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
